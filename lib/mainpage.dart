@@ -1200,7 +1200,7 @@ class _Page3State extends State<Page3> {
     super.initState();
   }
 
-  List<List<dynamic>> getWeekPlans() {
+  List<List<dynamic>> getWeekPlan() {
     List<List<dynamic>> weekPlans = [];
     try {
       Map<String, dynamic> jsonData = jsonDecode(removeControlCharacters());
@@ -1244,6 +1244,43 @@ class _Page3State extends State<Page3> {
       print('Error: $e');
     }
     return weekPlans;
+  }
+
+  List<dynamic> getWeekPlans() {
+    List<dynamic> plans = [];
+    try {
+      Map<String, dynamic> jsonData = jsonDecode(removeControlCharacters());
+      plans = jsonData['plans'].map((plan) {
+        String name = plan['weekPlanName'];
+        List<dynamic> dayProgress = [];
+        List<dynamic> weekPlan = plan['weekPlan'];
+        for (var day in weekPlan) {
+          dayProgress.add(day['dayProgress']);
+        }
+        return [name, dayProgress];
+      }).toList();
+    } catch (e) {
+      print('Error: $e');
+    }
+    return plans;
+  }
+
+  List<dynamic> calculateAverageTotalDayProgress(List<dynamic> weekPlans) {
+    List<double> totalProgress = List.filled(7, 0.0);
+    List<String> names = [];
+
+    for (var plan in weekPlans) {
+      String name = plan[0];
+      List<dynamic> daysProgress =
+          plan[1].map((value) => double.parse(value)).toList();
+
+      names.add(name);
+
+      for (int i = 0; i < daysProgress.length; i++) {
+        totalProgress[i] += daysProgress[i];
+      }
+    }
+    return [names, totalProgress];
   }
 
   String removeControlCharacters() {
@@ -1309,6 +1346,139 @@ class _Page3State extends State<Page3> {
     });
   }
 
+  void showTotalPerformanceProgressChartDialog(List<dynamic> weekplan) {
+    List<FlSpot> seriesList = List.generate(
+      7,
+      (index) => FlSpot(index.toDouble(), 0),
+    );
+    List<double> average = weekplan[1].cast<double>();
+
+    try {
+      for (int i = 0; i < average.length; i++) {
+        double dayProgress = double.tryParse(average[i].toString()) ?? 0.0;
+        seriesList[i] = FlSpot(i.toDouble(), dayProgress);
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+
+    List<String> dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Total Overall Performance',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  height: 300, // Adjust container height
+                  child: LineChart(
+                    LineChartData(
+                      minY: 0, // Adjust y-axis minimum value
+                      maxY: 100, // Adjust y-axis maximum value
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: seriesList,
+                          isCurved: true,
+                          colors: [Colors.orange],
+                          barWidth: 4,
+                          isStrokeCapRound: true,
+                          belowBarData: BarAreaData(show: false),
+                        ),
+                      ],
+                      titlesData: FlTitlesData(
+                        bottomTitles: SideTitles(
+                          showTitles: true,
+                          getTextStyles: (value) => const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          margin: 20,
+                          rotateAngle: 45,
+                          getTitles: (value) {
+                            // Customizing X-axis labels using the predefined day names list
+                            if (value % 1 == 0) {
+                              return dayNames[value
+                                  .toInt()]; // Return the day name corresponding to the index
+                            }
+                            return '';
+                          },
+                        ),
+                        leftTitles: SideTitles(
+                          showTitles: true,
+                          getTextStyles: (value) => const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          margin: 8, // Adjust margin for y-axis labels
+                          reservedSize:
+                              30, // Adjust the space reserved for y-axis labels
+                          interval:
+                              10, // Define the interval between y-axis labels
+                          getTitles: (value) {
+                            return value
+                                .toInt()
+                                .toString(); // Convert value to string
+                          },
+                        ),
+                        rightTitles: SideTitles(
+                            showTitles: false), // Hide right y-axis labels
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    elevation: 5,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void showProgressChartDialog(dynamic weekplan) {
     List<FlSpot> seriesList = List.generate(
       7,
@@ -1317,7 +1487,7 @@ class _Page3State extends State<Page3> {
     try {
       for (int i = 0; i < weekplan.length; i++) {
         double dayProgress = double.tryParse(weekplan[i][1].toString()) ?? 0.0;
-        seriesList[i] = new FlSpot(i.toDouble(), dayProgress);
+        seriesList[i] = FlSpot(i.toDouble(), dayProgress);
       }
     } catch (e) {
       print('Error: $e');
@@ -1443,26 +1613,69 @@ class _Page3State extends State<Page3> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    List<List<dynamic>> weekplan = getWeekPlan();
+    List<dynamic> plans = getWeekPlans();
+
     if (currentTask.isEmpty) {
-      return Center(
-        child: Text(
-          'No Tasks Running Now',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: Text(
+              'No Tasks Running Now',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(height: 25),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  showProgressChartDialog(weekplan);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  elevation: 5,
+                ),
+                child: Text(
+                  'Total Week \n Performance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  showTotalPerformanceProgressChartDialog(
+                      calculateAverageTotalDayProgress(plans));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  elevation: 5,
+                ),
+                child: Text(
+                  'Total Performance',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       );
     }
     String TaskName = currentTask['taskName'];
     String startTime = currentTask['startTime'];
     String endTime = currentTask['endTime'];
     String description = currentTask['description'];
-    int totalDuration = int.parse(
-        currentTask["taskDuration"]); // Parse the duration to an integer
+    int totalDuration = int.parse(currentTask["taskDuration"]);
     int remainingDuration = (totalDuration * 60 - _elapsedSeconds) ~/ 60;
     String duration = remainingDuration.toString();
-    String percentageOfDay = "Percentage Of Day";
     List<dynamic> programs = currentTask['programs'];
     String Programs = programs.join(', ');
-    List<List<dynamic>> weekplan = getWeekPlans();
     return Column(
       children: [
         Container(
@@ -1719,10 +1932,8 @@ class _Page3State extends State<Page3> {
 
 class DurationCircleWidget extends StatelessWidget {
   final String duration;
-
   const DurationCircleWidget({Key? key, required this.duration})
       : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Container(
