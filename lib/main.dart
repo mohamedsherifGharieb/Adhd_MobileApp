@@ -44,6 +44,7 @@ class HomePage extends StatelessWidget {
         title: Text('Lock'),
         backgroundColor: Colors.blue, // Set the app bar color to blue
         centerTitle: true, // Center the title
+        leading: null,
       ),
       body: Center(
         child: Container(

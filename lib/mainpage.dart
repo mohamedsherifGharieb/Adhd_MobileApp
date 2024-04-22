@@ -45,6 +45,8 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Set this property to false
+
       appBar: AppBar(
         title: Text(
           'Main Page',
@@ -95,7 +97,7 @@ class _MainPageState extends State<MainPage> {
     return InkWell(
       onTap: () {
         if (index == 5) {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => HomePage()),
           );
@@ -1667,7 +1669,7 @@ class _Page3State extends State<Page3> {
         ],
       );
     }
-    String TaskName = currentTask['taskName'];
+    String taskName = currentTask['taskName'];
     String startTime = currentTask['startTime'];
     String endTime = currentTask['endTime'];
     String description = currentTask['description'];
@@ -1702,14 +1704,18 @@ class _Page3State extends State<Page3> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Current Task: $TaskName',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                Row(children: [
+                  Text(
+                    'Current Task: $taskName ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
                   ),
-                ),
+                  SizedBox(width: 135), // Add space between texts
+                  SubmitTask()
+                ]),
                 Row(
                   children: [
                     Text(
@@ -1909,7 +1915,10 @@ class _Page3State extends State<Page3> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showTotalPerformanceProgressChartDialog(
+                        calculateAverageTotalDayProgress(plans));
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue, // Set button color to white
                     elevation: 5, // Add shadow to the button
@@ -1953,6 +1962,130 @@ class DurationCircleWidget extends StatelessWidget {
           fontSize: 12,
         ),
       ),
+    );
+  }
+}
+
+class SubmitTask extends StatefulWidget {
+  @override
+  _SubmitTaskState createState() => _SubmitTaskState();
+}
+
+class _SubmitTaskState extends State<SubmitTask> {
+  bool isHovered = false;
+  double sliderValue = 50;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _showDialog,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isHovered ? Colors.green : Colors.white,
+          border: Border.all(
+            color: isHovered ? Colors.green : Colors.blue,
+            width: 2,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.check,
+          color: isHovered ? Colors.white : Colors.blue,
+        ),
+      ),
+    );
+  }
+
+  void _showDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController textEditingController = TextEditingController();
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          content: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return Column(
+                      children: [
+                        Text(
+                          '${sliderValue.toInt()}%',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Slider(
+                          value: sliderValue,
+                          min: 0,
+                          max: 100,
+                          onChanged: (value) {
+                            setState(() {
+                              sliderValue = value;
+                            });
+                          },
+                          activeColor: Colors.blue,
+                          inactiveColor: Colors.white,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                SizedBox(height: 20),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: textEditingController,
+                    decoration: InputDecoration(
+                      hintText: 'Write Review',
+                      border: InputBorder.none,
+                    ),
+                    maxLines: 6,
+                    minLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+              ),
+              child: Text(
+                'Submit',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(
+                'No',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
