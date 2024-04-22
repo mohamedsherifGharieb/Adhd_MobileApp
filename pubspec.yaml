@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^0.13.3  
+  fl_chart: ^0.35.0
+
 
 
   english_words: ^4.0.0

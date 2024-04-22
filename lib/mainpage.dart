@@ -3,8 +3,16 @@ import 'package:namer_app/main.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:fl_chart/fl_chart.dart';
 
 Map<String, dynamic> currentTask = {};
+
+class MyData {
+  final String dayName;
+  final double dayProgress;
+
+  MyData(this.dayName, this.dayProgress);
+}
 
 class MainPage extends StatefulWidget {
   String responseBody;
@@ -1174,7 +1182,7 @@ class Page3 extends StatefulWidget {
   Page3({required this.responseBody});
 
   @override
-  _Page3State createState() => _Page3State();
+  _Page3State createState() => _Page3State(responseBody: responseBody);
 }
 
 class _Page3State extends State<Page3> {
@@ -1183,10 +1191,64 @@ class _Page3State extends State<Page3> {
   int _elapsedSeconds = 0;
   bool _isTimerRunning = false;
   bool _isDialogShown = false;
+  final String responseBody;
+
+  _Page3State({required this.responseBody});
 
   @override
   void initState() {
     super.initState();
+  }
+
+  List<List<dynamic>> getWeekPlans() {
+    List<List<dynamic>> weekPlans = [];
+    try {
+      Map<String, dynamic> jsonData = jsonDecode(removeControlCharacters());
+      List<dynamic> plans = jsonData['plans'];
+      DateTime currentDate = DateTime.now();
+
+      for (var plan in plans) {
+        List<String> startDateParts =
+            (plan['weekPlanSDate'] as String).split('/');
+        DateTime planStartDate = DateTime(
+          int.parse(startDateParts[2]),
+          int.parse(startDateParts[1]),
+          int.parse(startDateParts[0]),
+        );
+
+        List<String> endDateParts =
+            (plan['weekPlanEDate'] as String).split('/');
+        DateTime planEndDate = DateTime(
+          int.parse(endDateParts[2]),
+          int.parse(endDateParts[1]),
+          int.parse(endDateParts[0]),
+        );
+
+        // Check if the current date is within the date range of the plan
+        if (currentDate.year == planStartDate.year &&
+                currentDate.month == planStartDate.month &&
+                currentDate.day == planStartDate.day ||
+            currentDate.year == planEndDate.year &&
+                currentDate.month == planEndDate.month &&
+                currentDate.day == planEndDate.day ||
+            (currentDate.isAfter(planStartDate) &&
+                currentDate.isBefore(planEndDate))) {
+          var weekPlan = plan['weekPlan'];
+          // Extract dayName and dayProgress and add them to the weekPlans list
+          for (var day in weekPlan) {
+            weekPlans.add([day['dayName'], day['dayProgress']]);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+    return weekPlans;
+  }
+
+  String removeControlCharacters() {
+    RegExp controlCharactersRegex = RegExp(r'[\x00-\x1F\x7F]');
+    return responseBody.replaceAll(controlCharactersRegex, '');
   }
 
   @override
@@ -1247,6 +1309,137 @@ class _Page3State extends State<Page3> {
     });
   }
 
+  void showProgressChartDialog(dynamic weekplan) {
+    List<FlSpot> seriesList = List.generate(
+      7,
+      (index) => FlSpot(index.toDouble(), 0),
+    );
+    try {
+      for (int i = 0; i < weekplan.length; i++) {
+        double dayProgress = double.tryParse(weekplan[i][1].toString()) ?? 0.0;
+        seriesList[i] = new FlSpot(i.toDouble(), dayProgress);
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+
+    List<String> dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Total Week Performance',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  height: 300, // Adjust container height
+                  child: LineChart(
+                    LineChartData(
+                      minY: 0, // Adjust y-axis minimum value
+                      maxY: 100, // Adjust y-axis maximum value
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: seriesList,
+                          isCurved: true,
+                          colors: [Colors.blue],
+                          barWidth: 4,
+                          isStrokeCapRound: true,
+                          belowBarData: BarAreaData(show: false),
+                        ),
+                      ],
+                      titlesData: FlTitlesData(
+                        bottomTitles: SideTitles(
+                          showTitles: true,
+                          getTextStyles: (value) => const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          margin: 20,
+                          rotateAngle: 45,
+                          getTitles: (value) {
+                            // Customizing X-axis labels using the predefined day names list
+                            if (value % 1 == 0) {
+                              return dayNames[value
+                                  .toInt()]; // Return the day name corresponding to the index
+                            }
+                            return '';
+                          },
+                        ),
+                        leftTitles: SideTitles(
+                          showTitles: true,
+                          getTextStyles: (value) => const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          margin: 8, // Adjust margin for y-axis labels
+                          reservedSize:
+                              30, // Adjust the space reserved for y-axis labels
+                          interval:
+                              10, // Define the interval between y-axis labels
+                          getTitles: (value) {
+                            return value
+                                .toInt()
+                                .toString(); // Convert value to string
+                          },
+                        ),
+                        rightTitles: SideTitles(
+                            showTitles: false), // Hide right y-axis labels
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    elevation: 5,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -1269,7 +1462,7 @@ class _Page3State extends State<Page3> {
     String percentageOfDay = "Percentage Of Day";
     List<dynamic> programs = currentTask['programs'];
     String Programs = programs.join(', ');
-
+    List<List<dynamic>> weekplan = getWeekPlans();
     return Column(
       children: [
         Container(
@@ -1446,12 +1639,8 @@ class _Page3State extends State<Page3> {
                             );
                           },
                         ).then((value) {
-                          // Handle the result from the dialog
                           if (value == true) {
-                            // User clicked "Yes", handle task cancellation here
-                          } else {
-                            // User clicked "No", do nothing or handle accordingly
-                          }
+                          } else {}
                         });
                       },
                       style: ElevatedButton.styleFrom(
@@ -1491,16 +1680,19 @@ class _Page3State extends State<Page3> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showProgressChartDialog(weekplan);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // Set button color to white
+                    backgroundColor: Colors.blue,
                     elevation: 5,
                   ),
                   child: Text(
                     'Total Week \n Performance',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: Colors.white), // Set text color to bluer
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 ElevatedButton(
@@ -1580,8 +1772,7 @@ class _Page4State extends State<Page4> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: Text('Settings'),
-        leading: null, // Remove the back arrow icon
-
+        leading: null,
         actions: [
           IconButton(
             icon: Icon(isEditMode ? Icons.done : Icons.edit),
@@ -1603,7 +1794,7 @@ class _Page4State extends State<Page4> {
         ],
       ),
       body: Container(
-        color: Colors.white, // Set body background color to white
+        color: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
