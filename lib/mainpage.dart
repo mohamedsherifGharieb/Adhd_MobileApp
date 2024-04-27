@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'datausage.dart';
 
 Map<String, dynamic> currentTask = {};
 String Username = '';
@@ -1137,18 +1138,42 @@ class ChatMessage extends StatelessWidget {
 class Page2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: Page2LockApp(),
-        ),
-        SizedBox(height: 20),
-        Expanded(
-          child: Page2Reminders(),
-        ),
-      ],
+    return FutureBuilder<Map<String, int>>(
+      future: UsageStatsManager.getDailyAppUsageStats(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // While data is being fetched, display a loading indicator
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          // If an error occurs during data fetching, display an error message
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          // If data fetching is successful, display the data
+          Map<String, int> data = snapshot.data!;
+          List<Widget> appUsageWidgets = [];
+
+          data.forEach((appName, usageDuration) {
+            appUsageWidgets.add(
+              ListTile(
+                title: Text(appName),
+                subtitle:
+                    Text('Usage Duration: ${_formatDuration(usageDuration)}'),
+              ),
+            );
+          });
+
+          return ListView(
+            children: appUsageWidgets,
+          );
+        }
+      },
     );
+  }
+
+  String _formatDuration(int durationInSeconds) {
+    int hours = durationInSeconds ~/ 3600;
+    int minutes = (durationInSeconds % 3600) ~/ 60;
+    return '$hours hours $minutes minutes';
   }
 }
 
