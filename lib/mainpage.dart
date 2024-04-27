@@ -4,8 +4,69 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 Map<String, dynamic> currentTask = {};
+String Username = '';
+String responseBody = '';
+String WeekPlanName = '';
+List<dynamic> currentweek = [];
+
+Future<String> getPatientID() async {
+  // Define the URL for the endpoint
+  String url = 'https://server---app-d244e2f2d7c9.herokuapp.com/getPatientID/';
+
+  try {
+    // Send the HTTP GET request with the username as a query parameter
+    http.Response response =
+        await http.get(Uri.parse('$url?userName=$Username'));
+
+    if (response.statusCode == 200) {
+      // If the request is successful, return the patient ID from the response body
+      return response.body;
+    } else if (response.statusCode == 404) {
+      // If no user or file found, return null
+      print('No user or file found.');
+      return '';
+    } else {
+      // If an error occurred, print the status code and return null
+      print('Error: ${response.statusCode}');
+      return '';
+    }
+  } catch (error) {
+    // If an error occurred making the HTTP request, print the error and return null
+    print('Error: $error');
+    return '';
+  }
+}
+
+Future<String> getPatientFile() async {
+  String patientIDWithSpecialChars = await getPatientID();
+  String pID = patientIDWithSpecialChars.split('%')[0];
+  String url =
+      'https://server---app-d244e2f2d7c9.herokuapp.com/getPatientFile/';
+
+  try {
+    http.Response response = await http.get(Uri.parse('$url?pID=$pID'));
+
+    if (response.statusCode == 200) {
+      // If the request is successful, return the patient file from the response body
+      return response.body;
+    } else if (response.statusCode == 404) {
+      // If no user or file found, return null
+      print('No user or file found.');
+      return '';
+    } else {
+      // If an error occurred, print the status code and return null
+      print('Error: ${response.statusCode}');
+      return '';
+    }
+  } catch (error) {
+    // If an error occurred making the HTTP request, print the error and return null
+    print('Error: $error');
+    return '';
+  }
+}
 
 class MyData {
   final String dayName;
@@ -15,27 +76,42 @@ class MyData {
 }
 
 class MainPage extends StatefulWidget {
-  String responseBody;
+  final String username;
 
-  MainPage({required this.responseBody});
+  const MainPage({Key? key, required this.username}) : super(key: key);
+
   @override
-  _MainPageState createState() => _MainPageState(responseBody: responseBody);
+  _MainPageState createState() => _MainPageState(username: username);
 }
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-  late final List<Widget> _pages;
-  late final String responseBody;
+  late List<Widget> _pages = [];
 
-  _MainPageState({required this.responseBody}) {
-    _pages = [
-      WelcomePage(responseBody: responseBody),
-      Page1(responseBody: responseBody),
-      Page2(responseBody: responseBody),
-      Page3(responseBody: responseBody),
-      Page4(responseBody: responseBody),
-    ];
+  final String username;
+
+  _MainPageState({required this.username});
+
+  @override
+  void initState() {
+    super.initState();
+    getUsernameAndPatientFile();
   }
+
+  Future<void> getUsernameAndPatientFile() async {
+    Username = username;
+    responseBody = await getPatientFile();
+    setState(() {
+      _pages = [
+        WelcomePage(),
+        Page1(),
+        Page2(),
+        Page3(),
+        Page4(),
+      ];
+    });
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -44,53 +120,54 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false, // Set this property to false
-
-      appBar: AppBar(
-        title: Text(
-          'Main Page',
-          style: TextStyle(
-            color: Colors.white, // Set text color to white
+    if (_pages.isEmpty) {
+      return CircularProgressIndicator();
+    } else {
+      return Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          title: Text(
+            'Monitor',
+            style: TextStyle(
+              color: Colors.white, // Set text color to white
+            ),
           ),
-        ),
-        leading: null, // Remove the back arrow icon
+          leading: null, // Remove the back arrow icon
 
-        backgroundColor: Colors.blue,
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              child: Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+          backgroundColor: Colors.blue,
+          centerTitle: true,
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Color.fromARGB(255, 24, 81, 128),
+                ),
+                child: Text(
+                  'Menu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
                 ),
               ),
-            ),
-            buildListTile('ThisWeek', 0),
-            buildListTile('Chat', 1),
-            buildListTile('Focus', 2),
-            buildListTile('User Activity', 3),
-            buildListTile('Setting', 4),
-            buildListTile('logout', 5),
-
-            // Add more list tiles for other pages
-          ],
+              buildListTile('ThisWeek', 0),
+              buildListTile('Chat', 1),
+              buildListTile('Focus', 2),
+              buildListTile('User Activity', 3),
+              buildListTile('Setting', 4),
+              buildListTile('logout', 5),
+            ],
+          ),
         ),
-      ),
-      body: Container(
-        color: Colors.white,
-        child: _pages[_selectedIndex],
-      ),
-    );
+        body: Container(
+          color: Colors.white,
+          child: _pages[_selectedIndex],
+        ),
+      );
+    }
   }
 
   Widget buildListTile(String title, int index) {
@@ -106,7 +183,8 @@ class _MainPageState extends State<MainPage> {
           Navigator.pop(context);
         }
       },
-      splashColor: Colors.blue.withOpacity(0.5), // Customize the splash color
+      splashColor: Color.fromARGB(255, 24, 81, 128)
+          .withOpacity(0.5), // Customize the splash color
       borderRadius: BorderRadius.circular(10), // Customize the border radius
       child: ListTile(
         title: Text(title),
@@ -116,13 +194,6 @@ class _MainPageState extends State<MainPage> {
 }
 
 class WelcomePage extends StatelessWidget {
-  const WelcomePage({
-    Key? key,
-    required this.responseBody,
-  }) : super(key: key);
-
-  final String responseBody;
-
   String removeControlCharacters() {
     RegExp controlCharactersRegex = RegExp(r'[\x00-\x1F\x7F]');
     return responseBody.replaceAll(controlCharactersRegex, '');
@@ -131,7 +202,6 @@ class WelcomePage extends StatelessWidget {
   String getName() {
     try {
       Map<String, dynamic> response = jsonDecode(removeControlCharacters());
-
       return response['patientName'];
     } catch (e) {
       // Handle parsing errors
@@ -291,6 +361,9 @@ class WelcomePage extends StatelessWidget {
             (currentDate.isAfter(planStartDate) &&
                 currentDate.isBefore(planEndDate))) {
           var weekPlan = plan['weekPlan'];
+          currentweek = plan['weekPlan'];
+          WeekPlanName = plan['weekPlanName'];
+
           for (var dayPlanData in weekPlan) {
             if (dayPlanData['dayName'] == day) {
               dayPlan = dayPlanData;
@@ -508,6 +581,28 @@ class _TaskItemState extends State<TaskItem> {
     return CurrentTask;
   }
 
+  bool currentDay(String taskName) {
+    List<Map<String, dynamic>> currentweekList =
+        currentweek.cast<Map<String, dynamic>>();
+
+    Map<String, dynamic> currentweekMap = {};
+    currentweekList.forEach((dayData) {
+      currentweekMap[dayData['dayName']] = dayData['tasks'];
+    });
+
+    String currentDayName = DateFormat('EEEE').format(DateTime.now());
+    List<dynamic>? tasksForCurrentDay = currentweekMap[currentDayName];
+    List<String> taskNames = tasksForCurrentDay != null
+        ? tasksForCurrentDay.map((task) => task['taskName'] as String).toList()
+        : [];
+
+    if (taskNames.contains(taskName)) {
+      return true;
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     String taskName = getname();
@@ -693,23 +788,6 @@ class _TaskItemState extends State<TaskItem> {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: 'Percentage of Day',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              Color.fromARGB(255, 16, 63, 102)),
-                                    ),
-                                    TextSpan(
-                                      text: ': $percentageOfDay',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
                                       text: 'Programs',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
@@ -725,49 +803,67 @@ class _TaskItemState extends State<TaskItem> {
                             ],
                           ),
                           actions: [
-                            TextButton(
-                              onPressed: () {
-                                if (currentTask.isEmpty) {
-                                  ScaffoldMessenger.of(context)
-                                      .hideCurrentSnackBar();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Task has started. Check User Activity for Running Task',
+                            if (!widget.isDone)
+                              TextButton(
+                                onPressed: () {
+                                  if (currentDay(taskName)) {
+                                    if (currentTask.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .hideCurrentSnackBar();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Task has started. Check User Activity for Running Task',
+                                          ),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                      currentTask = data;
+                                      Navigator.of(context).pop();
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .hideCurrentSnackBar();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'There is a Task Running',
+                                          ),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                      Navigator.of(context).pop();
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context)
+                                        .hideCurrentSnackBar();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'The Task Running Is not For Today',
+                                        ),
+                                        duration: Duration(seconds: 2),
                                       ),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                  currentTask = data;
-                                  Navigator.of(context).pop();
-                                } else {
-                                  ScaffoldMessenger.of(context)
-                                      .hideCurrentSnackBar();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'There is a Task Running',
-                                      ),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                              child: Text(
-                                'Start Task',
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 24, 81, 128),
+                                    );
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                                child: Text(
+                                  'Start Task',
+                                  style: TextStyle(
+                                    color: Color.fromARGB(255, 24, 81, 128),
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Text('Close',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
+                            if (!widget.isDone)
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('Close',
+                                    style: TextStyle(color: Colors.red)),
+                              ),
                           ],
                         ),
                       );
@@ -794,20 +890,14 @@ class _TaskItemState extends State<TaskItem> {
 }
 
 class Page1 extends StatefulWidget {
-  final String responseBody;
-  Page1({required this.responseBody});
-
   @override
-  _Page1State createState() => _Page1State(responseBody: responseBody);
+  _Page1State createState() => _Page1State();
 }
 
 class _Page1State extends State<Page1> {
-  final String responseBody;
   List<ChatMessage> messages = [];
   Timer? timer;
   final TextEditingController _messageController = TextEditingController();
-
-  _Page1State({required this.responseBody});
 
   @override
   void initState() {
@@ -1007,7 +1097,7 @@ class ChatMessage extends StatelessWidget {
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue,
+        color: Color.fromARGB(255, 24, 81, 128),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1023,7 +1113,7 @@ class ChatMessage extends StatelessWidget {
               child: Text(
                 sender,
                 style: TextStyle(
-                  color: Colors.blue,
+                  color: Color.fromARGB(255, 24, 81, 128),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1045,9 +1135,6 @@ class ChatMessage extends StatelessWidget {
 }
 
 class Page2 extends StatelessWidget {
-  final String responseBody;
-
-  Page2({required this.responseBody});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1089,10 +1176,10 @@ class _Page2LockAppState extends State<Page2LockApp> {
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Color.fromARGB(255, 24, 81, 128),
                 shadows: [
                   Shadow(
-                    color: Colors.blue.withOpacity(0.5),
+                    color: Color.fromARGB(255, 24, 81, 128).withOpacity(0.5),
                     blurRadius: 10,
                     offset: Offset(0, 0),
                   ),
@@ -1145,10 +1232,10 @@ class _Page2RemindersState extends State<Page2Reminders> {
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Color.fromARGB(255, 24, 81, 128),
                 shadows: [
                   Shadow(
-                    color: Colors.blue.withOpacity(0.5),
+                    color: Color.fromARGB(255, 24, 81, 128).withOpacity(0.5),
                     blurRadius: 10,
                     offset: Offset(0, 0),
                   ),
@@ -1180,11 +1267,8 @@ class _Page2RemindersState extends State<Page2Reminders> {
 }
 
 class Page3 extends StatefulWidget {
-  final String responseBody;
-  Page3({required this.responseBody});
-
   @override
-  _Page3State createState() => _Page3State(responseBody: responseBody);
+  _Page3State createState() => _Page3State();
 }
 
 class _Page3State extends State<Page3> {
@@ -1193,9 +1277,8 @@ class _Page3State extends State<Page3> {
   int _elapsedSeconds = 0;
   bool _isTimerRunning = false;
   bool _isDialogShown = false;
-  final String responseBody;
 
-  _Page3State({required this.responseBody});
+  _Page3State();
 
   @override
   void initState() {
@@ -1236,7 +1319,6 @@ class _Page3State extends State<Page3> {
             (currentDate.isAfter(planStartDate) &&
                 currentDate.isBefore(planEndDate))) {
           var weekPlan = plan['weekPlan'];
-          // Extract dayName and dayProgress and add them to the weekPlans list
           for (var day in weekPlan) {
             weekPlans.add([day['dayName'], day['dayProgress']]);
           }
@@ -1393,7 +1475,7 @@ class _Page3State extends State<Page3> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Color.fromARGB(255, 24, 81, 128),
                   ),
                 ),
                 SizedBox(height: 10),
@@ -1462,7 +1544,7 @@ class _Page3State extends State<Page3> {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Color.fromARGB(255, 24, 81, 128),
                     elevation: 5,
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   ),
@@ -1524,7 +1606,7 @@ class _Page3State extends State<Page3> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Color.fromARGB(255, 24, 81, 128),
                   ),
                 ),
                 SizedBox(height: 10),
@@ -1538,7 +1620,7 @@ class _Page3State extends State<Page3> {
                         LineChartBarData(
                           spots: seriesList,
                           isCurved: true,
-                          colors: [Colors.blue],
+                          colors: [Color.fromARGB(255, 24, 81, 128)],
                           barWidth: 4,
                           isStrokeCapRound: true,
                           belowBarData: BarAreaData(show: false),
@@ -1593,7 +1675,7 @@ class _Page3State extends State<Page3> {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Color.fromARGB(255, 24, 81, 128),
                     elevation: 5,
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   ),
@@ -1637,7 +1719,7 @@ class _Page3State extends State<Page3> {
                   showProgressChartDialog(weekplan);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Color.fromARGB(255, 24, 81, 128),
                   elevation: 5,
                 ),
                 child: Text(
@@ -1654,7 +1736,7 @@ class _Page3State extends State<Page3> {
                       calculateAverageTotalDayProgress(plans));
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Color.fromARGB(255, 24, 81, 128),
                   elevation: 5,
                 ),
                 child: Text(
@@ -1677,7 +1759,15 @@ class _Page3State extends State<Page3> {
     int remainingDuration = (totalDuration * 60 - _elapsedSeconds) ~/ 60;
     String duration = remainingDuration.toString();
     List<dynamic> programs = currentTask['programs'];
-    String Programs = programs.join(', ');
+    String programNames = '';
+    for (var program in programs) {
+      String baseName = program['baseName'];
+      programNames += '$baseName, '; // Concatenate each name
+    }
+
+    programNames = programNames.isNotEmpty
+        ? programNames.substring(0, programNames.length - 2)
+        : '';
     return Column(
       children: [
         Container(
@@ -1686,11 +1776,12 @@ class _Page3State extends State<Page3> {
           decoration: BoxDecoration(
             color: Colors.white, // Change background color to white
             borderRadius: BorderRadius.circular(10),
-            border:
-                Border.all(color: Colors.blue, width: 3), // Add border color
+            border: Border.all(
+                color: Color.fromARGB(255, 24, 81, 128),
+                width: 3), // Add border color
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.5),
+                color: Color.fromARGB(255, 24, 81, 128).withOpacity(0.5),
                 spreadRadius: 5,
                 blurRadius: 7,
                 offset: Offset(0, 3),
@@ -1710,10 +1801,10 @@ class _Page3State extends State<Page3> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: Color.fromARGB(255, 24, 81, 128),
                     ),
                   ),
-                  SizedBox(width: 135), // Add space between texts
+                  SizedBox(width: 100), // Add space between texts
                   SubmitTask()
                 ]),
                 Row(
@@ -1722,7 +1813,7 @@ class _Page3State extends State<Page3> {
                       'Start Time: $startTime',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 24, 81, 128),
                       ),
                     ),
                     SizedBox(width: 75), // Add space between texts
@@ -1730,7 +1821,7 @@ class _Page3State extends State<Page3> {
                       ' Exp EndTime: $endTime',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 24, 81, 128),
                       ),
                     ),
                   ],
@@ -1739,7 +1830,7 @@ class _Page3State extends State<Page3> {
                   'Description: $description',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.blue,
+                    color: Color.fromARGB(255, 24, 81, 128),
                   ),
                 ),
                 Row(
@@ -1748,17 +1839,17 @@ class _Page3State extends State<Page3> {
                       'Duration:',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 24, 81, 128),
                       ),
                     ),
                     SizedBox(width: 5),
                     DurationCircleWidget(duration: duration),
                     SizedBox(width: 75), // Add space between texts
                     Text(
-                      "Programs : $Programs",
+                      "Programs : $programNames",
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 24, 81, 128),
                       ),
                     ),
                   ],
@@ -1771,15 +1862,16 @@ class _Page3State extends State<Page3> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Color.fromARGB(255, 24, 81, 128),
                       ),
                     ),
                     SizedBox(
                         height: 5), // Add space between title and progress bar
                     LinearProgressIndicator(
-                      value: double.parse(currentTask["taskProgress"]),
+                      value: double.parse(currentTask["taskProgress"]) / 100,
                       backgroundColor: Colors.grey,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Color.fromARGB(255, 24, 81, 128)),
                     ),
                   ],
                 ),
@@ -1797,8 +1889,8 @@ class _Page3State extends State<Page3> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Colors.blue, // Set button color to blue
+                        backgroundColor: Color.fromARGB(
+                            255, 24, 81, 128), // Set button color to blue
                       ),
                       child: Text(
                         'Start',
@@ -1821,7 +1913,7 @@ class _Page3State extends State<Page3> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Color.fromARGB(255, 24, 81, 128),
                       ),
                       child: Text(
                         'Pause',
@@ -1887,7 +1979,7 @@ class _Page3State extends State<Page3> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(1),
+                  color: Color.fromARGB(255, 24, 81, 128).withOpacity(1),
                   spreadRadius: 5,
                   blurRadius: 7,
                   offset: Offset(0, 3),
@@ -1903,7 +1995,7 @@ class _Page3State extends State<Page3> {
                     showProgressChartDialog(weekplan);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Color.fromARGB(255, 24, 81, 128),
                     elevation: 5,
                   ),
                   child: Text(
@@ -1920,7 +2012,8 @@ class _Page3State extends State<Page3> {
                         calculateAverageTotalDayProgress(plans));
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // Set button color to white
+                    backgroundColor: Color.fromARGB(
+                        255, 24, 81, 128), // Set button color to white
                     elevation: 5, // Add shadow to the button
                   ),
                   child: Text(
@@ -1946,19 +2039,21 @@ class DurationCircleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32, // Adjust size as needed
-      height: 32, // Adjust size as needed
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white, // Set white background color
-        border: Border.all(color: Colors.blue, width: 2), // Add blue border
+        border: Border.all(
+            color: Color.fromARGB(255, 24, 81, 128),
+            width: 2), // Add blue border
       ),
       alignment: Alignment.center,
       child: Text(
         duration,
         style: TextStyle(
-          color:
-              Colors.blue, // Change text color to black for better visibility
+          color: Color.fromARGB(255, 24, 81,
+              128), // Change text color to black for better visibility
           fontSize: 12,
         ),
       ),
@@ -1986,17 +2081,33 @@ class _SubmitTaskState extends State<SubmitTask> {
           shape: BoxShape.circle,
           color: isHovered ? Colors.green : Colors.white,
           border: Border.all(
-            color: isHovered ? Colors.green : Colors.blue,
+            color: isHovered ? Colors.green : Color.fromARGB(255, 24, 81, 128),
             width: 2,
           ),
         ),
         alignment: Alignment.center,
         child: Icon(
           Icons.check,
-          color: isHovered ? Colors.white : Colors.blue,
+          color: isHovered ? Colors.white : Color.fromARGB(255, 24, 81, 128),
         ),
       ),
     );
+  }
+
+  String removeControlCharacters() {
+    RegExp controlCharactersRegex = RegExp(r'[\x00-\x1F\x7F]');
+    return responseBody.replaceAll(controlCharactersRegex, '');
+  }
+
+  String getName() {
+    try {
+      Map<String, dynamic> response = jsonDecode(removeControlCharacters());
+      return response['patientName'];
+    } catch (e) {
+      // Handle parsing errors
+      print('Error parsing JSON: $e');
+      return 'Error';
+    }
   }
 
   void _showDialog() {
@@ -2018,7 +2129,7 @@ class _SubmitTaskState extends State<SubmitTask> {
                         Text(
                           '${sliderValue.toInt()}%',
                           style: TextStyle(
-                            color: Colors.blue,
+                            color: Color.fromARGB(255, 24, 81, 128),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -2031,7 +2142,7 @@ class _SubmitTaskState extends State<SubmitTask> {
                               sliderValue = value;
                             });
                           },
-                          activeColor: Colors.blue,
+                          activeColor: Color.fromARGB(255, 24, 81, 128),
                           inactiveColor: Colors.white,
                         ),
                       ],
@@ -2042,7 +2153,7 @@ class _SubmitTaskState extends State<SubmitTask> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue),
+                    border: Border.all(color: Color.fromARGB(255, 24, 81, 128)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextField(
@@ -2060,11 +2171,76 @@ class _SubmitTaskState extends State<SubmitTask> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                double dayProgress = 0.0;
+                Map<String, dynamic> response =
+                    jsonDecode(removeControlCharacters());
+                String reviewText = textEditingController.text;
+                String slider2 = sliderValue.toStringAsFixed(0);
+                currentTask['Review'] = reviewText;
+                currentTask['taskProgress'] = slider2;
+                currentTask['submittedPercentage'] = slider2;
+                if (sliderValue > 60) {
+                  currentTask['submitted'] = 'true';
+                }
+                String name = getName();
+                String currentDayName =
+                    DateFormat('EEEE').format(DateTime.now());
+                List<dynamic> weekPlans = response['plans'];
+                for (var weekPlan in weekPlans) {
+                  if (weekPlan['weekPlanName'] == WeekPlanName) {
+                    List<dynamic> days = weekPlan['weekPlan'];
+                    for (var day in days) {
+                      if (day['dayName'] == currentDayName) {
+                        List<dynamic> tasks = day['tasks'];
+                        for (int i = 0; i < tasks.length; i++) {
+                          if (tasks[i]['taskName'] == currentTask['taskName']) {
+                            tasks[i] = currentTask;
+                          }
+                          dayProgress += double.parse(
+                              tasks[i]['submittedPercentage'].toString());
+                        }
+                        dayProgress = dayProgress / tasks.length;
+
+                        day['dayProgress'] = dayProgress.toStringAsFixed(0);
+                        break;
+                      }
+                    }
+                  }
+                }
+                String encodedResponse = json.encode(response);
+                String url =
+                    'https://server---app-d244e2f2d7c9.herokuapp.com/setPatientFile/'; // Update the URL
+
+                try {
+                  Map<String, dynamic> requestBody = {
+                    'file':
+                        encodedResponse, // Assuming file is the file you want to set
+                    'patientName':
+                        name, // Assuming patientName is the patient's name
+                  };
+
+                  http.Response response = await http.post(
+                    Uri.parse(url),
+                    body: jsonEncode(requestBody),
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  );
+                  if (response.statusCode == 200) {
+                    print('File set successfully');
+                  } else {
+                    print('Error: ${response.statusCode}');
+                  }
+                } catch (error) {
+                  print('Error: $error');
+                }
                 Navigator.of(context).pop();
+                currentTask = {};
+                responseBody = encodedResponse;
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Color.fromARGB(255, 24, 81, 128),
               ),
               child: Text(
                 'Submit',
@@ -2091,9 +2267,7 @@ class _SubmitTaskState extends State<SubmitTask> {
 }
 
 class Page4 extends StatefulWidget {
-  final String responseBody;
-
-  Page4({required this.responseBody});
+  Page4();
   @override
   _Page4State createState() => _Page4State();
 }
@@ -2150,7 +2324,8 @@ class _Page4State extends State<Page4> {
                 decoration: InputDecoration(
                   labelText: 'Username',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
+                    borderSide:
+                        BorderSide(color: Color.fromARGB(255, 24, 81, 128)),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -2232,7 +2407,7 @@ class _Page4State extends State<Page4> {
                 child: Text('Submit'),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Color.fromARGB(255, 24, 81, 128),
                 ),
               ),
             ],

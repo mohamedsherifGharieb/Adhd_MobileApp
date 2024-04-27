@@ -132,8 +132,8 @@ class HomePage extends StatelessWidget {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => MainPage(
-                                      responseBody: responseBodyString),
+                                  builder: (context) =>
+                                      MainPage(username: username),
                                 ),
                               );
                             } catch (e) {
