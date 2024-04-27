@@ -5,6 +5,8 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
     <application
         android:label="Monitor"
         android:name="${applicationName}"

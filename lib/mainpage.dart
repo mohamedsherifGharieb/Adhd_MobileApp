@@ -1138,35 +1138,50 @@ class ChatMessage extends StatelessWidget {
 class Page2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, int>>(
-      future: UsageStatsManager.getDailyAppUsageStats(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // While data is being fetched, display a loading indicator
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          // If an error occurs during data fetching, display an error message
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else {
-          // If data fetching is successful, display the data
-          Map<String, int> data = snapshot.data!;
-          List<Widget> appUsageWidgets = [];
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            displayFormattedCallLog(context);
+          },
+          child: Text('Show Call Logs'),
+        ),
+        ElevatedButton(
+          onPressed: () {},
+          child: Text('Show Location'),
+        ),
+        Expanded(
+          child: FutureBuilder<Map<String, int>>(
+            future: UsageStatsManager.getDailyAppUsageStats(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                // While data is being fetched, display a loading indicator
+                return Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else {
+                Map<String, int> data = snapshot.data!;
 
-          data.forEach((appName, usageDuration) {
-            appUsageWidgets.add(
-              ListTile(
-                title: Text(appName),
-                subtitle:
-                    Text('Usage Duration: ${_formatDuration(usageDuration)}'),
-              ),
-            );
-          });
+                List<Widget> appUsageWidgets = [];
 
-          return ListView(
-            children: appUsageWidgets,
-          );
-        }
-      },
+                data.forEach((appName, usageDuration) {
+                  appUsageWidgets.add(
+                    ListTile(
+                      title: Text(appName),
+                      subtitle: Text(
+                          'Usage Duration: ${_formatDuration(usageDuration)}'),
+                    ),
+                  );
+                });
+
+                return ListView(
+                  children: appUsageWidgets,
+                );
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -1174,6 +1189,29 @@ class Page2 extends StatelessWidget {
     int hours = durationInSeconds ~/ 3600;
     int minutes = (durationInSeconds % 3600) ~/ 60;
     return '$hours hours $minutes minutes';
+  }
+
+  void displayFormattedCallLog(BuildContext context) async {
+    String formattedEntry = await UsageStatsManager.formatCallLogEntry();
+
+    // Show dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Calls'),
+          content: Text(formattedEntry),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

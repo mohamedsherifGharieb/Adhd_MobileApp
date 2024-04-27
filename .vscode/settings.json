@@ -1,3 +1,4 @@
 {
-    "java.jdt.ls.androidSupport.enabled": "auto"
+    "java.jdt.ls.androidSupport.enabled": "auto",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }
