@@ -1140,15 +1140,31 @@ class Page2 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: () {
-            displayFormattedCallLog(context);
-          },
-          child: Text('Show Call Logs'),
-        ),
-        ElevatedButton(
-          onPressed: () {},
-          child: Text('Show Location'),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                displayFormattedCallLog(context);
+              },
+              child: Text('Show Call Logs'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String locationData =
+                    await UsageStatsManager.getLocationUpdates();
+                _showLocationDialog(context, locationData);
+              },
+              child: Text('Show Location'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String locationData =
+                    await UsageStatsManager.getLocationUpdates();
+                _showLocationDialog(context, locationData);
+              },
+              child: Text(' Activity '),
+            ),
+          ],
         ),
         Expanded(
           child: FutureBuilder<Map<String, int>>(
@@ -1189,6 +1205,26 @@ class Page2 extends StatelessWidget {
     int hours = durationInSeconds ~/ 3600;
     int minutes = (durationInSeconds % 3600) ~/ 60;
     return '$hours hours $minutes minutes';
+  }
+
+  void _showLocationDialog(BuildContext context, String locationData) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Location Data'),
+          content: Text(locationData),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void displayFormattedCallLog(BuildContext context) async {

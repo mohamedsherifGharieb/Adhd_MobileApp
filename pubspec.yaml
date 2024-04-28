@@ -17,6 +17,10 @@ dependencies:
   shared_preferences: ^2.0.6
   app_usage : ^3.0.1
   call_log: ^4.0.0
+  background_location: ^0.13.0
+
+
+
 
 
   
@@ -25,6 +29,8 @@ dependencies:
 
   english_words: ^4.0.0
   provider: ^6.0.0
+  location: ^6.0.1
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
