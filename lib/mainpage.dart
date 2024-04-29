@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:namer_app/main.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'datausage.dart';
+import 'Log.dart';
 
 Map<String, dynamic> currentTask = {};
 String Username = '';
@@ -97,11 +97,15 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     getUsernameAndPatientFile();
+    ActivityTracker.startTracking();
   }
 
   Future<void> getUsernameAndPatientFile() async {
     Username = username;
-    responseBody = await getPatientFile();
+    String file = await getPatientFile();
+    if (file.isNotEmpty) {
+      responseBody = file;
+    }
     setState(() {
       _pages = [
         WelcomePage(),
@@ -177,7 +181,7 @@ class _MainPageState extends State<MainPage> {
         if (index == 5) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomePage()),
+            MaterialPageRoute(builder: (context) => LoginScreen()),
           );
         } else {
           _onItemTapped(index);
@@ -1158,9 +1162,7 @@ class Page2 extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                String locationData =
-                    await UsageStatsManager.getLocationUpdates();
-                _showLocationDialog(context, locationData);
+                _showActivityDialog(context);
               },
               child: Text(' Activity '),
             ),
@@ -1249,6 +1251,42 @@ class Page2 extends StatelessWidget {
       },
     );
   }
+}
+
+void _showActivityDialog(BuildContext context) {
+  Map<String, Duration> activityDurations =
+      ActivityTracker.getActivityDurations();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return _buildActivityDialog(context, activityDurations);
+    },
+  );
+}
+
+Widget _buildActivityDialog(
+    BuildContext context, Map<String, Duration> activityDurations) {
+  return AlertDialog(
+    title: Text('Activity Durations'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: activityDurations.entries.map((entry) {
+        return ListTile(
+          title: Text(entry.key),
+          subtitle: Text(entry.value.toString()),
+        );
+      }).toList(),
+    ),
+    actions: [
+      ElevatedButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+        child: Text('Close'),
+      ),
+    ],
+  );
 }
 
 class Page2LockApp extends StatefulWidget {
