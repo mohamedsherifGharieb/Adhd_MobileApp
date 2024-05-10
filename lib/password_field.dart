@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class PasswordField extends StatefulWidget {
   final TextEditingController passwordController;
@@ -118,7 +119,9 @@ class _PasswordFieldState extends State<PasswordField> {
                           });
                         },
                         child: Icon(
-                          obscure ? Icons.visibility : Icons.visibility_off,
+                          obscure
+                              ? CupertinoIcons.eye_slash_fill
+                              : CupertinoIcons.eye,
                           size: 27,
                           color: Colors.white,
                         ),

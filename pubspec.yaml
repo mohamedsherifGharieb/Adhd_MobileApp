@@ -1,24 +1,24 @@
-name: namer_app
-description: A new Flutter project.
+  name: namer_app
+  description: A new Flutter project.
 
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+  publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.0.1+1
+  version: 0.0.1+1
 
-environment:
-  sdk: ^3.1.1
+  environment:
+    sdk: ^3.1.1
 
-dependencies:
-  flutter:
-    sdk: flutter
-  http: ^0.13.3  
-  fl_chart: ^0.35.0
-  intl: ^0.17.0 
-  shared_preferences: ^2.0.6
-  app_usage: ^3.0.1
-  call_log: ^4.0.0
-  background_location: ^0.13.0
-  sensors_plus: ^5.0.1
-  provider: ^6.1.2
-  cupertino_icons : ^1.0.8 
+  dependencies:
+    flutter:
+      sdk: flutter
+    http: ^0.13.3  
+    fl_chart: ^0.35.0
+    intl: ^0.17.0 
+    shared_preferences: ^2.0.6
+    app_usage: ^3.0.1
+    call_log: ^4.0.0
+    background_location: ^0.13.0
+    sensors_plus: ^5.0.1
+    provider: ^6.1.2
+    cupertino_icons : ^1.0.8 
 

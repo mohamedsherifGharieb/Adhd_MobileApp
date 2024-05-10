@@ -96,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             '$url?userName=$user&password=$pass'));
 
                                     if (response.statusCode == 200) {
-                                      // If the response status code is 200, it means the login was successful
                                       Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
@@ -105,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       );
                                     } else if (response.statusCode == 404) {
-                                      // If the response status code is 404, it means no user was found
                                       print("No user found.");
                                     } else {
                                       // For any other status code, print the error

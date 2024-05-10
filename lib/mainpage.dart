@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'datausage.dart';
 import 'Log.dart';
+import 'package:flutter/cupertino.dart';
 
 Map<String, dynamic> currentTask = {};
 String Username = '';
@@ -126,7 +127,22 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     if (_pages.isEmpty) {
-      return CircularProgressIndicator();
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Monitor',
+            style: TextStyle(
+              color: Colors.white, // Set text color to white
+            ),
+          ),
+          leading: null, // Remove the back arrow icon
+          backgroundColor: Colors.blue,
+          centerTitle: true,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     } else {
       return Scaffold(
         resizeToAvoidBottomInset: false,
@@ -137,8 +153,16 @@ class _MainPageState extends State<MainPage> {
               color: Colors.white, // Set text color to white
             ),
           ),
-          leading: null, // Remove the back arrow icon
-
+          leading: Builder(
+            builder: (BuildContext context) {
+              return IconButton(
+                icon: Icon(CupertinoIcons.house_fill), // Add the menu icon
+                onPressed: () {
+                  Scaffold.of(context).openDrawer(); // Open the drawer
+                },
+              );
+            },
+          ),
           backgroundColor: Colors.blue,
           centerTitle: true,
         ),
@@ -641,7 +665,9 @@ class _TaskItemState extends State<TaskItem> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                widget.isDone ? Icons.check : Icons.close,
+                widget.isDone
+                    ? CupertinoIcons.check_mark
+                    : CupertinoIcons.xmark,
                 color: widget.isDone
                     ? Color.fromARGB(255, 24, 81, 128)
                     : Color.fromARGB(255, 24, 81, 128),
@@ -1573,10 +1599,12 @@ class _Page3State extends State<Page3> {
       (index) => FlSpot(index.toDouble(), 0),
     );
     List<double> average = weekplan[1].cast<double>();
-
     try {
       for (int i = 0; i < average.length; i++) {
         double dayProgress = double.tryParse(average[i].toString()) ?? 0.0;
+        if (dayProgress < 0.99) {
+          dayProgress *= 100;
+        }
         seriesList[i] = FlSpot(i.toDouble(), dayProgress);
       }
     } catch (e) {
@@ -1708,6 +1736,9 @@ class _Page3State extends State<Page3> {
     try {
       for (int i = 0; i < weekplan.length; i++) {
         double dayProgress = double.tryParse(weekplan[i][1].toString()) ?? 0.0;
+        if (dayProgress < 0.99) {
+          dayProgress *= 100;
+        }
         seriesList[i] = FlSpot(i.toDouble(), dayProgress);
       }
     } catch (e) {
@@ -2224,7 +2255,7 @@ class _SubmitTaskState extends State<SubmitTask> {
         ),
         alignment: Alignment.center,
         child: Icon(
-          Icons.check,
+          CupertinoIcons.check_mark,
           color: isHovered ? Colors.white : Color.fromARGB(255, 24, 81, 128),
         ),
       ),
@@ -2430,7 +2461,9 @@ class _Page4State extends State<Page4> {
         leading: null,
         actions: [
           IconButton(
-            icon: Icon(isEditMode ? Icons.done : Icons.edit),
+            icon: Icon(isEditMode
+                ? CupertinoIcons.check_mark
+                : CupertinoIcons.padlock),
             onPressed: () {
               setState(() {
                 isEditMode = !isEditMode;
@@ -2439,7 +2472,7 @@ class _Page4State extends State<Page4> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.email),
+            icon: Icon(CupertinoIcons.mail),
             onPressed: () {
               setState(() {
                 isEditEmail = !isEditEmail;

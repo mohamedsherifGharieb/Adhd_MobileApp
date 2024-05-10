@@ -1,6 +1,3 @@
-import 'package:namer_app/colors.dart';
-
-import 'colors.dart';
 import 'package:flutter/material.dart';
 
 class EmailField extends StatefulWidget {
@@ -34,7 +31,7 @@ class _EmailFieldState extends State<EmailField>
     _animationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     final tween =
-        ColorTween(begin: Colors.white.withOpacity(0), end: blueColor);
+        ColorTween(begin: Colors.white.withOpacity(0), end: Colors.blue);
 
     _animation = tween.animate(_animationController)
       ..addListener(() {
