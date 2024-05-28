@@ -2369,7 +2369,8 @@ class _SubmitTaskState extends State<SubmitTask> {
                               tasks[i]['submittedPercentage'].toString());
                         }
                         dayProgress = dayProgress / tasks.length;
-
+                        print(tasks.length);
+                        print(dayProgress.toStringAsFixed(0));
                         day['dayProgress'] = dayProgress.toStringAsFixed(0);
                         break;
                       }
