@@ -1551,7 +1551,7 @@ class _Page3State extends State<Page3> {
 
           if (_elapsedSeconds == int.parse(currentTask['taskDuration']) * 60) {
             timer.cancel();
-            _dialogTimer.cancel(); // Cancel dialog timer when main timer ends
+            _dialogTimer.cancel();
           }
         });
       }
@@ -1599,12 +1599,22 @@ class _Page3State extends State<Page3> {
       (index) => FlSpot(index.toDouble(), 0),
     );
     List<double> average = weekplan[1].cast<double>();
+
     try {
       for (int i = 0; i < average.length; i++) {
         double dayProgress = double.tryParse(average[i].toString()) ?? 0.0;
-        if (dayProgress < 0.99) {
+
+        if (dayProgress < 0.0) {
+          print('Warning: Negative value encountered: $dayProgress');
+          dayProgress = 0.0;
+        } else if (dayProgress <= 1.0) {
           dayProgress *= 100;
         }
+
+        if (dayProgress > 100.0) {
+          dayProgress = 100.0;
+        }
+
         seriesList[i] = FlSpot(i.toDouble(), dayProgress);
       }
     } catch (e) {
@@ -1645,15 +1655,15 @@ class _Page3State extends State<Page3> {
                 ),
                 SizedBox(height: 10),
                 Container(
-                  height: 300, // Adjust container height
+                  height: 300,
                   child: LineChart(
                     LineChartData(
-                      minY: 0, // Adjust y-axis minimum value
-                      maxY: 100, // Adjust y-axis maximum value
+                      minY: 0,
+                      maxY: 100,
                       lineBarsData: [
                         LineChartBarData(
                           spots: seriesList,
-                          isCurved: true,
+                          isCurved: false,
                           colors: [Colors.orange],
                           barWidth: 4,
                           isStrokeCapRound: true,
@@ -1671,10 +1681,8 @@ class _Page3State extends State<Page3> {
                           margin: 20,
                           rotateAngle: 45,
                           getTitles: (value) {
-                            // Customizing X-axis labels using the predefined day names list
                             if (value % 1 == 0) {
-                              return dayNames[value
-                                  .toInt()]; // Return the day name corresponding to the index
+                              return dayNames[value.toInt()];
                             }
                             return '';
                           },
@@ -1686,19 +1694,14 @@ class _Page3State extends State<Page3> {
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
-                          margin: 8, // Adjust margin for y-axis labels
-                          reservedSize:
-                              30, // Adjust the space reserved for y-axis labels
-                          interval:
-                              10, // Define the interval between y-axis labels
+                          margin: 8,
+                          reservedSize: 30,
+                          interval: 10,
                           getTitles: (value) {
-                            return value
-                                .toInt()
-                                .toString(); // Convert value to string
+                            return value.toInt().toString();
                           },
                         ),
-                        rightTitles: SideTitles(
-                            showTitles: false), // Hide right y-axis labels
+                        rightTitles: SideTitles(showTitles: false),
                       ),
                     ),
                   ),
@@ -1736,8 +1739,13 @@ class _Page3State extends State<Page3> {
     try {
       for (int i = 0; i < weekplan.length; i++) {
         double dayProgress = double.tryParse(weekplan[i][1].toString()) ?? 0.0;
-        if (dayProgress < 0.99) {
+        if (dayProgress < 0.0) {
+          dayProgress = 0.0;
+        } else if (dayProgress <= 1.0) {
           dayProgress *= 100;
+        }
+        if (dayProgress > 100.0) {
+          dayProgress = 100.0;
         }
         seriesList[i] = FlSpot(i.toDouble(), dayProgress);
       }
@@ -1779,15 +1787,16 @@ class _Page3State extends State<Page3> {
                 ),
                 SizedBox(height: 10),
                 Container(
-                  height: 300, // Adjust container height
+                  height: 300,
                   child: LineChart(
                     LineChartData(
-                      minY: 0, // Adjust y-axis minimum value
-                      maxY: 100, // Adjust y-axis maximum value
+                      minY: 0,
+                      maxY: 100,
                       lineBarsData: [
                         LineChartBarData(
                           spots: seriesList,
-                          isCurved: true,
+                          isCurved:
+                              false, // Set this to false to remove the curve
                           colors: [Color.fromARGB(255, 24, 81, 128)],
                           barWidth: 4,
                           isStrokeCapRound: true,
@@ -1805,10 +1814,8 @@ class _Page3State extends State<Page3> {
                           margin: 20,
                           rotateAngle: 45,
                           getTitles: (value) {
-                            // Customizing X-axis labels using the predefined day names list
                             if (value % 1 == 0) {
-                              return dayNames[value
-                                  .toInt()]; // Return the day name corresponding to the index
+                              return dayNames[value.toInt()];
                             }
                             return '';
                           },
@@ -1820,19 +1827,14 @@ class _Page3State extends State<Page3> {
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
-                          margin: 8, // Adjust margin for y-axis labels
-                          reservedSize:
-                              30, // Adjust the space reserved for y-axis labels
-                          interval:
-                              10, // Define the interval between y-axis labels
+                          margin: 8,
+                          reservedSize: 30,
+                          interval: 10,
                           getTitles: (value) {
-                            return value
-                                .toInt()
-                                .toString(); // Convert value to string
+                            return value.toInt().toString();
                           },
                         ),
-                        rightTitles: SideTitles(
-                            showTitles: false), // Hide right y-axis labels
+                        rightTitles: SideTitles(showTitles: false),
                       ),
                     ),
                   ),
@@ -2379,7 +2381,7 @@ class _SubmitTaskState extends State<SubmitTask> {
                 }
                 String encodedResponse = json.encode(response);
                 String url =
-                    'https://server---app-d244e2f2d7c9.herokuapp.com/setPatientFile/'; // Update the URL
+                    'https://server---app-d244e2f2d7c9.herokuapp.com/setPatientFile/';
 
                 try {
                   Map<String, dynamic> requestBody = {
